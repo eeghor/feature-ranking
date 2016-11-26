@@ -63,7 +63,7 @@ class Feature_Extractor(object):
 				self.customer_features[""]
 			elif ((mos_letter in ["D","F"]) or
 				(mos_letter == "H" and mosn in [31,32])):
-				self.customer_features["average_education"]
+				self.customer_features["average_education"] = 1
 			else:
 				self.customer_features["poor_education"] = 1
 
@@ -77,59 +77,59 @@ class Feature_Extractor(object):
 	# given the mtype_counts dictionary, summarise these in a meaningful way
 
 		if "BALLET" in mtype_counts:
-			self.customer_features["likes_ballet"] = 1
+			self.customer_features["likes_ballet"] += 1
 
 		if ("80SPOP" in mtype_counts) or ("80SROCK" in mtype_counts):
-			self.customer_features["likes_80s_music"] = 1
+			self.customer_features["likes_80s_music"] += 1
 
 		if ("70SPOP" in mtype_counts) or ("70SROCK" in mtype_counts):
-			self.customer_features["likes_70s_music"] = 1
+			self.customer_features["likes_70s_music"] += 1
 
 		if (("RNB" in mtype_counts) or 
 			("SOUL" in mtype_counts) or 
 			("RAP" in mtype_counts) or
 			("POP" in mtype_counts)):
-			self.customer_features["likes_soul_rnb_rap"] = 1
+			self.customer_features["likes_soul_rnb_rap"] += 1
 
 		if (("SENIOR" in mtype_counts) or 
 			("COMMUNIT" in mtype_counts)):
-			self.customer_features["likes_senior_community_events"] = 1
+			self.customer_features["likes_senior_community_events"] += 1
 
 		if (("SFFILM" in mtype_counts) or 
 			("FESTFILM" in mtype_counts) or 
 			("CINEMA" in mtype_counts)):
-			self.customer_features["likes_movies"] = 1
+			self.customer_features["likes_movies"] = +1
 
 		if ("GOLF" in mtype_counts):
-			self.customer_features["likes_golf"] = 1
+			self.customer_features["likes_golf"] += 1
 
 		if ("AFL" in mtype_counts):
-			self.customer_features["likes_afl"] = 1
+			self.customer_features["likes_afl"] += 1
 
 		if ("CRICKET" in mtype_counts):
-			self.customer_features["likes_cricket"] = 1
+			self.customer_features["likes_cricket"] += 1
 
 		if "HORSER" in mtype_counts:
-			self.customer_features["likes_horse_racing"] = 1
+			self.customer_features["likes_horse_racing"] += 1
 
 		if "SOCCER" in mtype_counts:
-			self.customer_features["likes_soccer"] = 1
+			self.customer_features["likes_soccer"] += 1
 
 		if (("RUNION" in mtype_counts) or 
 			("LEAGUE" in mtype_counts)):
-			self.customer_features["likes_rugby"] = 1
+			self.customer_features["likes_rugby"] += 1
 
 		if "TENNIS" in mtype_counts:
-			self.customer_features["likes_tennis"] = 1
+			self.customer_features["likes_tennis"] += 1
 
 		if ("MUSEUM" in mtype_counts):
-			self.customer_features["likes_museums"] = 1
+			self.customer_features["likes_museums"] += 1
 
 	def show_features(self):
 
 		print("currently, the features are as below:")
 		for feature, v in self.customer_features.items():
-			print("{}:{}".format(feature, v))
+			print("{}\t{}".format(feature, v))
 
 	def process_df(self):
 
@@ -141,7 +141,7 @@ class Feature_Extractor(object):
 
 		for customer in lst_unique_customerIDs:
 			 self.cust_mtype_counts[customer] = Counter(self.df.loc[self.df["CustomerID"] == customer, "MTypeSecondary"])
-			 print("counter:",self.cust_mtype_counts[customer])
+			 # print("counter:",self.cust_mtype_counts[customer])
 
 		# same for the primary type counts
 
@@ -153,7 +153,7 @@ class Feature_Extractor(object):
 
 		for customer in lst_unique_customerIDs:
 			self.cust_mosaic[customer] = Counter(self.df.loc[self.df["CustomerID"] == customer, "MosaicType"])
-			print("mosaic for this customer:", self.cust_mosaic[customer])
+			# print("mosaic for this customer:", self.cust_mosaic[customer])
 			if len(self.cust_mosaic[customer]) > 1:
 				print("note: customer with ID={} is in multiple Mosaic classes: {}".format(customer, list(self.cust_mosaic[customer].keys())))
 
@@ -162,7 +162,7 @@ class Feature_Extractor(object):
 			self.get_mtype_features(self.cust_mtype_counts[customer])
 		# and Mosaic features
 			cust_moss = list(self.cust_mosaic[customer].keys())
-			print(cust_moss)
+			# print(cust_moss)
 			self.get_mosaic_features(cust_moss[0])
 
 
