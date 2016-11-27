@@ -3,15 +3,35 @@ import pickle
 from collections import defaultdict, Counter
 import re
 
+"""
+INPUT:  the input data frame has the following columns:
+
+'CustomerID', 'Gender', 'ageGroup', 'MosaicType', 'CustomerState', 'CustPop', 'SalePop', 
+'transID', 'DaysAhead', 'ValueAdmitQty', 'AdmitQty', 'Sales', 'VenueState', 'pk_event_dim', 
+'CancelledFlag', 'BChannel', 'MTypePrimary', 'MTypeSecondary', 'CardType', 'EventNameStandard', 
+'PrimaryShow', 'PrimaryShowDesc', 'pk_attribute_dim'
+
+OUTPUT: a data frame containing features for the customers
+
+'CustomerID', 'Feature 1', 'Feature 2', .... 
+
+"""
+
+
 class Feature_Extractor(object):
 
 	def __init__(self, customer_df):
 
+		# customer_df 
+
 		self.df = customer_df
 		self.customer_features = defaultdict(int)
+
+		# these are intermediate features that don't necessarily make it to thr final list:
 		self.cust_mtype_counts = defaultdict(lambda _: defaultdict(int))
 		self.cust_pmtype_counts = defaultdict(lambda _: defaultdict(int))
 		self.cust_mosaic = defaultdict(lambda _: defaultdict(int))
+		self.cust_all_pops = []
 
 	def get_mosaic_features(self, cust_mosaic_class):
 	
@@ -137,6 +157,12 @@ class Feature_Extractor(object):
 		# the result should be {"customer1": {"AFL":12, "ballet":1,..}, "customer2": {..}}
 
 		lst_unique_customerIDs = list(self.df["CustomerID"].unique())
+		n_unique_cust = len(lst_unique_customerIDs)  # number of unique customers
+
+		# drop duplicates on CustomerID and transaction ID (the same customer and transaction can be in several populations)
+
+		self.df.drop_duplocates(subset=["CustomerID", "transID"], inplace=True)
+
 		# print(lst_unique_customerIDs)
 
 		for customer in lst_unique_customerIDs:
