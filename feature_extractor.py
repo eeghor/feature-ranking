@@ -32,6 +32,7 @@ class CustProfileCreator(object):
 		self.df = transaction_df.drop_duplicates(subset=["CustomerID", "transID"], inplace=False)
 		self.noriginal_trans = len(transaction_df.index)
 		self.ucustomer_ids = list(self.df["CustomerID"].unique())  # list of unique customer IDs
+		self.pops = set(self.df["CustPop"]) | set(self.df["SalePop"])  
 		self.nuc = len(self.ucustomer_ids)
 		self.cust_feature_dict = defaultdict(lambda: defaultdict(int))  # {"customerID1": {"feature1": 1, "feature2": 0, ..}, ..}
 		self.customer_profile = pd.DataFrame()
@@ -45,6 +46,7 @@ class CustProfileCreator(object):
 		self.customer_state_features = set()
 		self.mtype_primary_features = set()
 		self.mtype_secondary_features = set()
+		self.pop_features = set()
 
 		# junk values
 		self.mtype_secondary_junk = ["---"]
@@ -60,6 +62,7 @@ class CustProfileCreator(object):
 		self.cust_mtype_counts = defaultdict(lambda: defaultdict(int))
 		self.cust_pmtype_counts = defaultdict(lambda: defaultdict(int))
 		self.cust_mosaic = defaultdict(lambda: defaultdict(int))
+		self.cust_pop_counts = defaultdict(lambda: defaultdict(int))
 
 	def describe_input_df(self):
 
@@ -95,6 +98,8 @@ class CustProfileCreator(object):
 			self.cust_pmtype_counts[customer] = Counter(df_only_this_customer["MTypePrimary"])
 			
 			tmp_mostypes = list(Counter(df_only_this_customer["MosaicType"]).keys())  # just in case someone is in multiple Mosaic classes
+
+			self.cust_pop_counts[customer] = Counter(df_only_this_customer["CustPop"]) + Counter(df_only_this_customer["SalePop"])
 
 			if len(tmp_mostypes) > 1:
 				print("warning! customer with id {} is in multiple Mosaic classes: {}".format(customer, tmp_mostypes))
@@ -199,6 +204,14 @@ class CustProfileCreator(object):
 				self.cust_feature_dict[customer][cstate_feature] = 1
 				self.customer_state_features.add(cstate_feature)
 
+			# 
+			# collect population features
+			#
+			for j in range(len(self.cust_pop_counts[customer].keys()),1,-1):
+				if j:
+					pop_feature = "in_" + str(j) + "_pops"
+					self.cust_feature_dict[customer][j] = 1 
+			
 	def create_profile(self):
 
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
@@ -210,6 +223,9 @@ class CustProfileCreator(object):
 		
 		print("created a customer profile for {} customers; total number of features is {}...".format(len(self.customer_profile.index), 
 																						len(list(self.customer_profile))))
+		if "in_all_"+str(len(self.pops))+"_pops" in list(self.customer_profile):
+			print("customers present in all populations: {}".format(self.customer_profile["in_all_pops"].sum()))
+		
 		self.customer_profile.to_pickle(self.savetofile )
 		print("saved profile to file {}...".format(self.savetofile ))
 

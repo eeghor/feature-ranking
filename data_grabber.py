@@ -30,10 +30,10 @@ class Data_Grabber(object):
 			conn = pyodbc.connect(self.auth)
 			start_time = time.time()
 
-			if self.howmany_rows != "*":
-				sql_line = "select top " + str(howmany_rows) + " from " + self.db_name
+			if self.get_howmany_rows != "*":
+				sql_line = "select top " + str(self.get_howmany_rows) + "*" + " from " + self.db_name
 			else:
-				sql_line = "select " + str(howmany_rows) + " from " + self.db_name
+				sql_line = "select " + str(self.get_howmany_rows) + " from " + self.db_name
 
 			self.df = pd.read_sql(sql_line, conn)
 			end_time = time.time()
