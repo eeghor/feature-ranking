@@ -28,6 +28,7 @@ class CustProfileCreator(object):
 
 		# drop duplicates on CustomerID and transaction ID (the same customer and transaction can be in several populations)
 		self.df = transaction_df.drop_duplicates(subset=["CustomerID", "transID"], inplace=False)
+		self.noriginal_trans = len(transaction_df.index)
 		self.ucustomer_ids = list(self.df["CustomerID"].unique())  # list of unique customer IDs
 		self.nuc = len(self.ucustomer_ids)
 		self.cust_feature_dict = defaultdict(lambda: defaultdict(int))  # {"customerID1": {"feature1": 1, "feature2": 0, ..}, ..}
@@ -43,7 +44,7 @@ class CustProfileCreator(object):
 
 	def describe_input_df(self):
 
-		print("input data frame contains {} unique transactions by {} unique customers".format(len(self.df.index), self.nuc))
+		print("input data frame contains {} transaction records in total; {} unique transactions by {} unique customers".format(self.noriginal_trans, len(self.df.index), self.nuc))
 		print("popular secondary mtypes are {}".format(self.list_popular_sec_mtypes))
 
 
@@ -55,8 +56,11 @@ class CustProfileCreator(object):
 				print("warning! this customer belongs to multiple classes meant to be mutually eclusive!")
 
 		if len(list_whats_in_column) > 0 and (list_whats_in_column[0] is not None):
+
 			return (True, list_whats_in_column[0])
+
 		else:
+
 			return (False, list_whats_in_column[0])
 
 	def create_customer_features(self):
@@ -166,7 +170,12 @@ class CustProfileCreator(object):
 	def create_profile(self):
 
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
-		print("created a customer profile:\ncustomers -- {}\t features -- {}".format(len(self.customer_profile.index), list(self.customer_profile)))
+		# deal with missing values where possible
+
+		print("created a customer profile for {} customers; total number of features is {}".format(len(self.customer_profile.index), 
+																						len(list(self.customer_profile))))
+		self.customer_profile.to_pickle("saved_profile.pkl")
+		print("saved profile to file {}".format("saved_profile.pkl"))
 
 
 
