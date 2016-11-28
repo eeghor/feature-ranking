@@ -166,6 +166,7 @@ class CustProfileCreator(object):
 	def create_profile(self):
 
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
+		print("created a customer profile:\ncustomers -- {}\t features -- {}".format(len(self.customer_profile.index), list(self.customer_profile)))
 
 
 
