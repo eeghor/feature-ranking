@@ -24,7 +24,7 @@ import re
 
 class CustProfileCreator(object):
 
-	def __init__(self, transaction_df):
+	def __init__(self, transaction_df, pkl_file_save):
 
 		# important! drop duplicates on CustomerID and transaction ID because the same customer and transaction can be 
 		# in several customer populations
@@ -53,6 +53,8 @@ class CustProfileCreator(object):
 		self.popular_sec_mtypes = sorted([(k,v) for k,v in Counter(self.df["MTypeSecondary"]).items() 
 													if (k.isalnum() and k not in self.mtype_secondary_junk)], key=lambda x: x[1], reverse=True)[:20]
 		self.list_popular_sec_mtypes = [tp for tp, co in self.popular_sec_mtypes]
+
+		self.savetofile = pkl_file_save
 
 		# intermediate features:
 		self.cust_mtype_counts = defaultdict(lambda: defaultdict(int))
@@ -87,8 +89,6 @@ class CustProfileCreator(object):
 			# create a data frame containing stansactions only for this customer
 			df_only_this_customer = self.df.loc[self.df["CustomerID"] == customer]
 
-			#print("customer is now", customer)
-			#print("secondary types for this customer are ", Counter(df_only_this_customer["MTypeSecondary"]).items() )
 			self.cust_mtype_counts[customer] = {k: v for k,v in Counter(df_only_this_customer["MTypeSecondary"]).items() 
 															if k in self.list_popular_sec_mtypes}  # note: count only popular secondary mtypes
 
@@ -175,8 +175,9 @@ class CustProfileCreator(object):
 
 			flag, val = self.approve_feature(df_only_this_customer["ageGroup"])
 			if flag:
-				self.cust_feature_dict[customer]["age_group=" + val] = 1
-				self.age_features.add("age_group=" + val)
+				ag_feature = "age_group=" + val
+				self.cust_feature_dict[customer][ag_feature] = 1
+				self.age_features.add(ag_feature)
 
 			# 
 			# collect gender feature
@@ -184,8 +185,9 @@ class CustProfileCreator(object):
 
 			flag, val = self.approve_feature(df_only_this_customer["Gender"])
 			if flag:
-				self.cust_feature_dict[customer]["gender=" + val] = 1
-				self.gender_features.add("gender=" + val)
+				gend_feature = "gender=" + val
+				self.cust_feature_dict[customer][gend_feature] = 1
+				self.gender_features.add(gend_feature)
 
 			# 
 			# collect customer state features
@@ -193,24 +195,23 @@ class CustProfileCreator(object):
 
 			flag, val = self.approve_feature(df_only_this_customer["CustomerState"])
 			if flag:
-				self.cust_feature_dict[customer]["cust_state=" + val] = 1
-				self.customer_state_features.add("cust_state=" + val)
+				cstate_feature = "cust_state=" + val
+				self.cust_feature_dict[customer][cstate_feature] = 1
+				self.customer_state_features.add(cstate_feature)
 
 	def create_profile(self):
 
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
-		
-		print(self.mtype_primary_features)
+		self.customer_profile["CustomerID"] = self.customer_profile.index
+
 		# deal with missing values where possible
 		self.customer_profile.loc[:,self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features] = \
 		self.customer_profile.loc[:,self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features].fillna(0)
-		#self.customer_profile.loc[:,self.mtype_secondary_features] = self.customer_profile.loc[:,self.mtype_secondary_features].fillna(0)
-
-		print("created a customer profile for {} customers; total number of features is {}".format(len(self.customer_profile.index), 
+		
+		print("created a customer profile for {} customers; total number of features is {}...".format(len(self.customer_profile.index), 
 																						len(list(self.customer_profile))))
-		print("mosaic aducation features:", self.mosaic_education_features)
-		self.customer_profile.to_pickle("saved_profile.pkl")
-		print("saved profile to file {}".format("saved_profile.pkl"))
+		self.customer_profile.to_pickle(self.savetofile )
+		print("saved profile to file {}...".format(self.savetofile ))
 
 
 
