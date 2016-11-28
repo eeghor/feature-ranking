@@ -34,9 +34,6 @@ class CustProfileCreator(object):
 		self.ucustomer_ids = list(self.df["CustomerID"].unique())  # list of unique customer IDs
 		self.nuc = len(self.ucustomer_ids)
 		self.cust_feature_dict = defaultdict(lambda: defaultdict(int))  # {"customerID1": {"feature1": 1, "feature2": 0, ..}, ..}
-		self.popular_sec_mtypes = sorted([(k,v) for k,v in Counter(self.df["MTypeSecondary"]).items() 
-													if (k.isalnum() and k not in ["NA"])], key=lambda x: x[1], reverse=True)[:20]
-		self.list_popular_sec_mtypes = [tp for tp, co in self.popular_sec_mtypes]
 		self.customer_profile = pd.DataFrame()
 		
 		# keep sets of features by type
@@ -48,6 +45,14 @@ class CustProfileCreator(object):
 		self.customer_state_features = set()
 		self.mtype_primary_features = set()
 		self.mtype_secondary_features = set()
+
+		# junk values
+		self.mtype_secondary_junk = ["---"]
+		self.mtype_primary_junk = "--- NA IGNORE".split()
+
+		self.popular_sec_mtypes = sorted([(k,v) for k,v in Counter(self.df["MTypeSecondary"]).items() 
+													if (k.isalnum() and k not in self.mtype_secondary_junk)], key=lambda x: x[1], reverse=True)[:20]
+		self.list_popular_sec_mtypes = [tp for tp, co in self.popular_sec_mtypes]
 
 		# intermediate features:
 		self.cust_mtype_counts = defaultdict(lambda: defaultdict(int))
@@ -153,7 +158,7 @@ class CustProfileCreator(object):
 			# collect primary Mtype features
 			#
 			for pmt in self.cust_pmtype_counts[customer].keys():
-				if pmt not in ["NA"]:
+				if pmt not in self.mtype_primary_junk:
 					self.cust_feature_dict[customer][pmt] = 1
 					self.mtype_primary_features.add(pmt)
 
