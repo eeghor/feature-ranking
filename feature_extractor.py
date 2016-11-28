@@ -1,9 +1,7 @@
-import pandas as pd
-import pickle
-from collections import defaultdict, Counter
-import re
-
 """
+This class takes a data frame that is effectively the original TRANSACTION profile table and produces a CUSTOMER profile 
+data frame;
+
 INPUT:  the input data frame has the following columns:
 
 'CustomerID', 'Gender', 'ageGroup', 'MosaicType', 'CustomerState', 'CustPop', 'SalePop', 
@@ -11,184 +9,164 @@ INPUT:  the input data frame has the following columns:
 'CancelledFlag', 'BChannel', 'MTypePrimary', 'MTypeSecondary', 'CardType', 'EventNameStandard', 
 'PrimaryShow', 'PrimaryShowDesc', 'pk_attribute_dim'
 
-OUTPUT: a data frame containing features for the customers
+OUTPUT: a data frame containing features for the customers, that is, it has the form
 
 'CustomerID', 'Feature 1', 'Feature 2', .... 
 
+--- igor k.  --- 28NOV2016 ---
+
 """
 
+import pandas as pd
+import pickle
+from collections import defaultdict, Counter
+import re
 
-class Feature_Extractor(object):
+class CustProfileCreator(object):
 
-	def __init__(self, customer_df):
-
-		# customer_df 
-
-		self.df = customer_df
-		self.customer_features = defaultdict(int)
-
-		# these are intermediate features that don't necessarily make it to thr final list:
-		self.cust_mtype_counts = defaultdict(lambda _: defaultdict(int))
-		self.cust_pmtype_counts = defaultdict(lambda _: defaultdict(int))
-		self.cust_mosaic = defaultdict(lambda _: defaultdict(int))
-		self.cust_all_pops = []
-
-	def get_mosaic_features(self, cust_mosaic_class):
-	
-	# given the Mosaic class cust_mosaic_class, create some features based on the class description;
-	# a proper Mosaic class looks like [letter][digit1][digit2];
-	# note: there are 49 Mosaic classes in total
-		
-		if cust_mosaic_class:
-
-			mos = re.compile('(^[A-M]{1})(\d{2}$)')
-			match_res = mos.match(cust_mosaic_class)  # match objects always have a boolean value of True
-			
-			assert match_res, "sorry, this is not a Mosaic group name.."   # error if no match 
-
-			mos_letter = match_res.group(1)  # the result of getting a group is a single string
-			mosn = int(match_res.group(2))
-
-			assert (mosn < 50), "Mosaic class number should be under 50..."
-			
-			#
-			# mosaic letter feature:
-			#
-			self.customer_features["mosaic_letter_" + mos_letter] = 1
-			
-			#
-			# income level feature:
-			#
-			if (mos_letter in ["A","D"] or 					    # all A and D are rich 
-				(mos_letter == "B" and mosn in range(5,9)) or   # B05 to B08 are rich but B09 aren't ("simple needs")
-				(mos_letter == "C" and mosn in [10, 12, 13]) or # C11 and C14 are likely to have average income
-				(mos_letter == "E" and mosn in [17,18]) or  	# E18 and E19 are probably not that rich
-				(mos_letter == "F" and mosn in [21])):  		# F22 to F24 may have average income
-				self.customer_features["high_income"] = 1
-
-			elif ((mos_letter in ["B"] and mosn in [9]) or      # these are "the good life" older couples
-				(mos_letter in ["G","H"]) or
-				(mos_letter == "C" and mosn in [11]) or   		# educated singles and couples in early career "inner city aspirations" 
-				(mos_letter == "E" and mosn in [19,20])):
-				self.customer_features["average_income"] = 1
-
-			else:
-				self.customer_features["low_income"] = 1
-
-			#
-			# education feature:
-			#
-			if ((mos_letter in ["A","B","C", "I"]) or 
-				(mos_letter == "H" and mosn in [30])):
-				self.customer_features[""]
-			elif ((mos_letter in ["D","F"]) or
-				(mos_letter == "H" and mosn in [31,32])):
-				self.customer_features["average_education"] = 1
-			else:
-				self.customer_features["poor_education"] = 1
-
-		else:
-
-			pass
-
-
-	def get_mtype_features(self, mtype_counts):
-
-	# given the mtype_counts dictionary, summarise these in a meaningful way
-
-		if "BALLET" in mtype_counts:
-			self.customer_features["likes_ballet"] += 1
-
-		if ("80SPOP" in mtype_counts) or ("80SROCK" in mtype_counts):
-			self.customer_features["likes_80s_music"] += 1
-
-		if ("70SPOP" in mtype_counts) or ("70SROCK" in mtype_counts):
-			self.customer_features["likes_70s_music"] += 1
-
-		if (("RNB" in mtype_counts) or 
-			("SOUL" in mtype_counts) or 
-			("RAP" in mtype_counts) or
-			("POP" in mtype_counts)):
-			self.customer_features["likes_soul_rnb_rap"] += 1
-
-		if (("SENIOR" in mtype_counts) or 
-			("COMMUNIT" in mtype_counts)):
-			self.customer_features["likes_senior_community_events"] += 1
-
-		if (("SFFILM" in mtype_counts) or 
-			("FESTFILM" in mtype_counts) or 
-			("CINEMA" in mtype_counts)):
-			self.customer_features["likes_movies"] = +1
-
-		if ("GOLF" in mtype_counts):
-			self.customer_features["likes_golf"] += 1
-
-		if ("AFL" in mtype_counts):
-			self.customer_features["likes_afl"] += 1
-
-		if ("CRICKET" in mtype_counts):
-			self.customer_features["likes_cricket"] += 1
-
-		if "HORSER" in mtype_counts:
-			self.customer_features["likes_horse_racing"] += 1
-
-		if "SOCCER" in mtype_counts:
-			self.customer_features["likes_soccer"] += 1
-
-		if (("RUNION" in mtype_counts) or 
-			("LEAGUE" in mtype_counts)):
-			self.customer_features["likes_rugby"] += 1
-
-		if "TENNIS" in mtype_counts:
-			self.customer_features["likes_tennis"] += 1
-
-		if ("MUSEUM" in mtype_counts):
-			self.customer_features["likes_museums"] += 1
-
-	def show_features(self):
-
-		print("currently, the features are as below:")
-		for feature, v in self.customer_features.items():
-			print("{}\t{}".format(feature, v))
-
-	def process_df(self):
-
-		# create a dictionary with the count of secondary MTypes for each customer;
-		# the result should be {"customer1": {"AFL":12, "ballet":1,..}, "customer2": {..}}
-
-		lst_unique_customerIDs = list(self.df["CustomerID"].unique())
-		n_unique_cust = len(lst_unique_customerIDs)  # number of unique customers
+	def __init__(self, transaction_df):
 
 		# drop duplicates on CustomerID and transaction ID (the same customer and transaction can be in several populations)
+		self.df = transaction_df.drop_duplicates(subset=["CustomerID", "transID"], inplace=False)
+		self.ucustomer_ids = list(self.df["CustomerID"].unique())  # list of unique customer IDs
+		self.nuc = len(self.ucustomer_ids)
+		self.cust_feature_dict = defaultdict(lambda: defaultdict(int))  # {"customerID1": {"feature1": 1, "feature2": 0, ..}, ..}
+		self.popular_sec_mtypes = sorted([(k,v) for k,v in Counter(self.df["MTypeSecondary"]).items() 
+													if k.isalnum()], key=lambda x: x[1], reverse=True)[:20]
+		self.list_popular_sec_mtypes = [tp for tp, co in self.popular_sec_mtypes]
+		self.customer_profile = pd.DataFrame()
 
-		self.df.drop_duplocates(subset=["CustomerID", "transID"], inplace=True)
+		# intermediate features:
+		self.cust_mtype_counts = defaultdict(lambda: defaultdict(int))
+		self.cust_pmtype_counts = defaultdict(lambda: defaultdict(int))
+		self.cust_mosaic = defaultdict(lambda: defaultdict(int))
 
-		# print(lst_unique_customerIDs)
+	def describe_input_df(self):
 
-		for customer in lst_unique_customerIDs:
-			 self.cust_mtype_counts[customer] = Counter(self.df.loc[self.df["CustomerID"] == customer, "MTypeSecondary"])
-			 # print("counter:",self.cust_mtype_counts[customer])
+		print("input data frame contains {} unique transactions by {} unique customers".format(len(self.df.index), self.nuc))
+		print("popular secondary mtypes are {}".format(self.list_popular_sec_mtypes))
 
-		# same for the primary type counts
 
-		for customer in lst_unique_customerIDs:
-			 self.cust_pmtype_counts[customer] = Counter(self.df.loc[self.df["CustomerID"] == customer, "MTypePrimary"])
+	def approve_feature(self, col):
 
-		# collect customer Mosaic classes; we use Counter to be able to easily check whether eachcustomer is indeed in 
-		# only one Mosaic class
+		list_whats_in_column = list(Counter(col).keys())
 
-		for customer in lst_unique_customerIDs:
-			self.cust_mosaic[customer] = Counter(self.df.loc[self.df["CustomerID"] == customer, "MosaicType"])
-			# print("mosaic for this customer:", self.cust_mosaic[customer])
-			if len(self.cust_mosaic[customer]) > 1:
-				print("note: customer with ID={} is in multiple Mosaic classes: {}".format(customer, list(self.cust_mosaic[customer].keys())))
+		if len(list_whats_in_column) > 1:
+				print("warning! this customer belongs to multiple classes meant to be mutually eclusive!")
 
-		for customer in self.cust_mosaic:
-		# now create the MType features
-			self.get_mtype_features(self.cust_mtype_counts[customer])
-		# and Mosaic features
-			cust_moss = list(self.cust_mosaic[customer].keys())
-			# print(cust_moss)
-			self.get_mosaic_features(cust_moss[0])
+		if len(list_whats_in_column) > 0 and (list_whats_in_column[0] is not None):
+			return (True, list_whats_in_column[0])
+		else:
+			return (False, list_whats_in_column[0])
+
+	def create_customer_features(self):
+	
+		for customer in self.ucustomer_ids:
+			
+			# create a data frame containing stansactions only for this customer
+			df_only_this_customer = self.df.loc[self.df["CustomerID"] == customer]
+
+			#print("customer is now", customer)
+			#print("secondary types for this customer are ", Counter(df_only_this_customer["MTypeSecondary"]).items() )
+			self.cust_mtype_counts[customer] = {k: v for k,v in Counter(df_only_this_customer["MTypeSecondary"]).items() 
+															if k in self.list_popular_sec_mtypes}  # note: count only popular secondary mtypes
+
+			self.cust_pmtype_counts[customer] = Counter(df_only_this_customer["MTypePrimary"])
+			
+			tmp_mostypes = list(Counter(df_only_this_customer["MosaicType"]).keys())  # just in case someone is in multiple Mosaic classes
+
+			if len(tmp_mostypes) > 1:
+				print("warning! customer with id {} is in multiple Mosaic classes: {}".format(customer, tmp_mostypes))
+
+			# given the Mosaic class moscl for a customer, create customer features based on the class description;
+			# a proper Mosaic class looks like [letter][digit1][digit2], for example, "A02"
+			# note: there are 49 Mosaic classes in total, hence "<50" when doing sanity check
+			
+			#
+			# collect Mosaic features
+			#
+			if len(tmp_mostypes) > 0 and (tmp_mostypes[0] is not None):
+
+				mosaic_mask = re.compile('(^[A-M]{1})(\d{2}$)')
+				match_res = mosaic_mask.match(tmp_mostypes[0])  # match objects always have a boolean value of True
+				assert match_res, "error! this is not a Mosaic group name.." 
+				mos_letter = match_res.group(1)  # mosaic letter
+				# print("mosaic letter is ", mos_letter)
+				mosn = int(match_res.group(2))  # mosaic number
+				assert (mosn < 50), "error! the Mosaic class number should be under 50..."
+				
+				# mosaic letter is a feature:
+				self.cust_feature_dict[customer]["mos_letter_" + mos_letter] = 1
+		
+				# income level features:		
+				if (mos_letter in ["A","D"] or 					    # all A and D are rich 
+					(mos_letter == "B" and mosn in range(5,9)) or   # B05 to B08 are rich but B09 aren't ("simple needs")
+					(mos_letter == "C" and mosn in [10, 12, 13]) or # C11 and C14 are likely to have average income
+					(mos_letter == "E" and mosn in [17,18]) or  	# E18 and E19 are probably not that rich
+					(mos_letter == "F" and mosn in [21])):  		# F22 to F24 may have average income
+					self.cust_feature_dict[customer]["high_income"] = 1
+
+				elif ((mos_letter in ["B"] and mosn in [9]) or      # these are "the good life" older couples
+					(mos_letter in ["G","H"]) or
+					(mos_letter == "C" and mosn in [11]) or   		# educated singles and couples in early career "inner city aspirations" 
+					(mos_letter == "E" and mosn in [19,20])):
+					self.cust_feature_dict[customer]["average_income"] = 1
+
+				else:
+					self.cust_feature_dict[customer]["low_income"] = 1
+
+				# education features:
+				if ((mos_letter in ["A","B","C", "I"]) or 
+					(mos_letter == "H" and mosn in [30])):
+					self.cust_feature_dict[customer]["good_education"]
+
+				elif ((mos_letter in ["D","F"]) or
+					(mos_letter == "H" and mosn in [31,32])):
+					self.cust_feature_dict[customer]["average_education"] = 1
+
+				else:
+					self.cust_feature_dict[customer]["poor_education"] = 1
+
+			# 
+			# collect primary Mtype features
+			#
+			for pmt in self.cust_pmtype_counts[customer].keys():
+				self.cust_feature_dict[customer][pmt] = 1 
+
+			# 
+			# collect secondary MType features
+			#
+			for smt in self.cust_mtype_counts[customer].keys():
+				self.cust_feature_dict[customer][smt] = 1 
+
+			#
+			# collect age group feature
+			#
+
+			flag, val = self.approve_feature(df_only_this_customer["ageGroup"])
+			if flag:
+				self.cust_feature_dict[customer]["age_group=" + val] = 1
+
+			# 
+			# collect gender feature
+			#
+
+			flag, val = self.approve_feature(df_only_this_customer["Gender"])
+			if flag:
+				self.cust_feature_dict[customer]["gender=" + val] = 1
+
+			# 
+			# collect customer state features
+			#
+
+			flag, val = self.approve_feature(df_only_this_customer["CustomerState"])
+			if flag:
+				self.cust_feature_dict[customer]["cust_state=" + val] = 1
+
+	def create_profile(self):
+
+		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
+
+
 
 
