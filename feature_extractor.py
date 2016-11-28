@@ -26,16 +26,28 @@ class CustProfileCreator(object):
 
 	def __init__(self, transaction_df):
 
-		# drop duplicates on CustomerID and transaction ID (the same customer and transaction can be in several populations)
+		# important! drop duplicates on CustomerID and transaction ID because the same customer and transaction can be 
+		# in several customer populations
+
 		self.df = transaction_df.drop_duplicates(subset=["CustomerID", "transID"], inplace=False)
 		self.noriginal_trans = len(transaction_df.index)
 		self.ucustomer_ids = list(self.df["CustomerID"].unique())  # list of unique customer IDs
 		self.nuc = len(self.ucustomer_ids)
 		self.cust_feature_dict = defaultdict(lambda: defaultdict(int))  # {"customerID1": {"feature1": 1, "feature2": 0, ..}, ..}
 		self.popular_sec_mtypes = sorted([(k,v) for k,v in Counter(self.df["MTypeSecondary"]).items() 
-													if k.isalnum()], key=lambda x: x[1], reverse=True)[:20]
+													if (k.isalnum() and k not in ["NA"])], key=lambda x: x[1], reverse=True)[:20]
 		self.list_popular_sec_mtypes = [tp for tp, co in self.popular_sec_mtypes]
 		self.customer_profile = pd.DataFrame()
+		
+		# keep sets of features by type
+		self.mosaic_letter_features = set()
+		self.mosaic_income_features = set()
+		self.mosaic_education_features = set()
+		self.age_features = set()
+		self.gender_features = set()
+		self.customer_state_features = set()
+		self.mtype_primary_features = set()
+		self.mtype_secondary_features = set()
 
 		# intermediate features:
 		self.cust_mtype_counts = defaultdict(lambda: defaultdict(int))
@@ -55,7 +67,7 @@ class CustProfileCreator(object):
 		if len(list_whats_in_column) > 1:
 				print("warning! this customer belongs to multiple classes meant to be mutually eclusive!")
 
-		if len(list_whats_in_column) > 0 and (list_whats_in_column[0] is not None):
+		if len(list_whats_in_column) > 0 and (list_whats_in_column[0] is not None) and (list_whats_in_column[0] != "UNK"):
 
 			return (True, list_whats_in_column[0])
 
@@ -109,39 +121,48 @@ class CustProfileCreator(object):
 					(mos_letter == "E" and mosn in [17,18]) or  	# E18 and E19 are probably not that rich
 					(mos_letter == "F" and mosn in [21])):  		# F22 to F24 may have average income
 					self.cust_feature_dict[customer]["high_income"] = 1
+					self.mosaic_income_features.add("high_income")
 
 				elif ((mos_letter in ["B"] and mosn in [9]) or      # these are "the good life" older couples
 					(mos_letter in ["G","H"]) or
 					(mos_letter == "C" and mosn in [11]) or   		# educated singles and couples in early career "inner city aspirations" 
 					(mos_letter == "E" and mosn in [19,20])):
 					self.cust_feature_dict[customer]["average_income"] = 1
+					self.mosaic_income_features.add("average_income")
 
 				else:
 					self.cust_feature_dict[customer]["low_income"] = 1
+					self.mosaic_income_features.add("low_income")
 
 				# education features:
 				if ((mos_letter in ["A","B","C", "I"]) or 
 					(mos_letter == "H" and mosn in [30])):
-					self.cust_feature_dict[customer]["good_education"]
+					self.cust_feature_dict[customer]["good_education"] = 1
+					self.mosaic_education_features.add("good_education")
 
 				elif ((mos_letter in ["D","F"]) or
 					(mos_letter == "H" and mosn in [31,32])):
 					self.cust_feature_dict[customer]["average_education"] = 1
+					self.mosaic_education_features.add("average_education")
 
 				else:
 					self.cust_feature_dict[customer]["poor_education"] = 1
+					self.mosaic_education_features.add("poor_education")
 
 			# 
 			# collect primary Mtype features
 			#
 			for pmt in self.cust_pmtype_counts[customer].keys():
-				self.cust_feature_dict[customer][pmt] = 1 
+				if pmt not in ["NA"]:
+					self.cust_feature_dict[customer][pmt] = 1
+					self.mtype_primary_features.add(pmt)
 
 			# 
 			# collect secondary MType features
 			#
 			for smt in self.cust_mtype_counts[customer].keys():
 				self.cust_feature_dict[customer][smt] = 1 
+				self.mtype_secondary_features.add(smt)
 
 			#
 			# collect age group feature
@@ -150,6 +171,7 @@ class CustProfileCreator(object):
 			flag, val = self.approve_feature(df_only_this_customer["ageGroup"])
 			if flag:
 				self.cust_feature_dict[customer]["age_group=" + val] = 1
+				self.age_features.add("age_group=" + val)
 
 			# 
 			# collect gender feature
@@ -158,6 +180,7 @@ class CustProfileCreator(object):
 			flag, val = self.approve_feature(df_only_this_customer["Gender"])
 			if flag:
 				self.cust_feature_dict[customer]["gender=" + val] = 1
+				self.gender_features.add("gender=" + val)
 
 			# 
 			# collect customer state features
@@ -166,14 +189,21 @@ class CustProfileCreator(object):
 			flag, val = self.approve_feature(df_only_this_customer["CustomerState"])
 			if flag:
 				self.cust_feature_dict[customer]["cust_state=" + val] = 1
+				self.customer_state_features.add("cust_state=" + val)
 
 	def create_profile(self):
 
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
+		
+		print(self.mtype_primary_features)
 		# deal with missing values where possible
+		self.customer_profile.loc[:,self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features] = \
+		self.customer_profile.loc[:,self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features].fillna(0)
+		#self.customer_profile.loc[:,self.mtype_secondary_features] = self.customer_profile.loc[:,self.mtype_secondary_features].fillna(0)
 
 		print("created a customer profile for {} customers; total number of features is {}".format(len(self.customer_profile.index), 
 																						len(list(self.customer_profile))))
+		print("mosaic aducation features:", self.mosaic_education_features)
 		self.customer_profile.to_pickle("saved_profile.pkl")
 		print("saved profile to file {}".format("saved_profile.pkl"))
 
