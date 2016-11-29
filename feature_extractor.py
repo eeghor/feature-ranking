@@ -24,7 +24,7 @@ import re
 
 class CustProfileCreator(object):
 
-	def __init__(self, transaction_df, pkl_file_save):
+	def __init__(self, transaction_df, pars):
 
 		# important! drop duplicates on CustomerID and transaction ID because the same customer and transaction can be 
 		# in several customer populations
@@ -49,14 +49,14 @@ class CustProfileCreator(object):
 		self.pop_features = set()
 
 		# junk values
-		self.mtype_secondary_junk = ["---"]
-		self.mtype_primary_junk = "--- NA IGNORE".split()
+		self.mtype_secondary_junk = pars["MTYPE_SECONDARY_JUNK"].split()
+		self.mtype_primary_junk = pars["MTYPE_PRIMARY_JUNK"].split()
 
 		self.popular_sec_mtypes = sorted([(k,v) for k,v in Counter(self.df["MTypeSecondary"]).items() 
 													if (k.isalnum() and k not in self.mtype_secondary_junk)], key=lambda x: x[1], reverse=True)[:20]
 		self.list_popular_sec_mtypes = [tp for tp, co in self.popular_sec_mtypes]
-
-		self.savetofile = pkl_file_save
+		self.mosaic_flag = pars["HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP"]
+		self.savetofile = pars["CUST_PROF_FILE"]
 
 		# intermediate features:
 		self.cust_mtype_counts = defaultdict(lambda: defaultdict(int))
@@ -216,12 +216,24 @@ class CustProfileCreator(object):
 			
 	def create_profile(self):
 
+		# first create a data frame
+
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
 		self.customer_profile["CustomerID"] = self.customer_profile.index
 
+		print("customer df has the following columns:", list(self.customer_profile))
+		# do we need to get rid of some customers? for example, those who are not assigned to any Mosaic classes
+
+		# if self.mosaic_flag == "0":
+
+		# 	idx_who_remove = self.customer_profile["MosaicType"].isnull()
+		# 	print("apparently, {} unique customers are not assigned to any Mosaic class...".format(len(idx_who_remove)))
+
+		# 	self.customer_profile = self.customer_profile[~idx_who_remove]
+
 		# deal with missing values where possible
 
-		# fill the belowe features with zeros where the values are missing
+		# fill the below features with zeros where the values are missing
 
 		idx_missing_zero = self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features | self.pop_features | self.age_features
 

@@ -27,7 +27,7 @@ GET_NROWS = *
 
 #  file to save pulled table
 
-TABLE_FILE = profile_table_df.pkl
+TABLE_FILE = ./data/some_data.pkl
 
 ### missing values parameters
 
@@ -35,6 +35,11 @@ TABLE_FILE = profile_table_df.pkl
 #
 # 0	: ignore 
 # [A-M]	: assume they all belong to group A, B, .., or M
+
+### junk values
+
+MTYPE_PRIMARY_JUNK = --- NA IGNORE
+MTYPE_SECONDARY_JUNK = ---
 
 HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP = 0
 
@@ -44,5 +49,11 @@ HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP = 0
 # 1	: assume they all belong to the most frequently observed gender
 
 HANDLE_CUSTOMERS_WITH_NO_GENDER = 0
+
+### where to save customer profile data frame
+
+CUST_PROF_FILE = ./data/cust_profile_df.pkl
+
+
 
 
