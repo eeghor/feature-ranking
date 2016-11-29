@@ -194,6 +194,7 @@ class CustProfileCreator(object):
 				self.cust_feature_dict[customer][gend_feature] = 1
 				self.gender_features.add(gend_feature)
 
+
 			# 
 			# collect customer state features
 			#
@@ -210,7 +211,8 @@ class CustProfileCreator(object):
 			for j in range(len(self.cust_pop_counts[customer].keys()),1,-1):
 				if j:
 					pop_feature = "in_" + str(j) + "_pops"
-					self.cust_feature_dict[customer][j] = 1 
+					self.pop_features.add(pop_feature)
+					self.cust_feature_dict[customer][pop_feature] = 1 
 			
 	def create_profile(self):
 
@@ -218,13 +220,16 @@ class CustProfileCreator(object):
 		self.customer_profile["CustomerID"] = self.customer_profile.index
 
 		# deal with missing values where possible
-		self.customer_profile.loc[:,self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features] = \
-		self.customer_profile.loc[:,self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features].fillna(0)
+
+		# fill the belowe features with zeros where the values are missing
+
+		idx_missing_zero = self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features | self.pop_features | self.age_features
+
+		self.customer_profile.loc[:,idx_missing_zero] = \
+		self.customer_profile.loc[:,idx_missing_zero].fillna(0)
 		
 		print("created a customer profile for {} customers; total number of features is {}...".format(len(self.customer_profile.index), 
 																						len(list(self.customer_profile))))
-		if "in_all_"+str(len(self.pops))+"_pops" in list(self.customer_profile):
-			print("customers present in all populations: {}".format(self.customer_profile["in_all_pops"].sum()))
 		
 		self.customer_profile.to_pickle(self.savetofile )
 		print("saved profile to file {}...".format(self.savetofile ))

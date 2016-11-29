@@ -1,0 +1,48 @@
+#
+# CONFIGURATION FILE for FEATURE RANKING
+#
+# note: use anything but "=" for comments
+#
+
+### database connection parameters
+
+# DSN (must be already set up on your machine)
+
+DSN = TEGA_DB
+
+# your password
+
+PWD = PA$$word914
+
+# table to connect to (and grab)
+
+TABLE_NAME = [TEGA].[TT\igork].AO_PopDiff
+
+# how many rows to get
+#
+# *	: all
+# n	: only n; fro example: 50000
+
+GET_NROWS = *
+
+#  file to save pulled table
+
+TABLE_FILE = profile_table_df.pkl
+
+### missing values parameters
+
+# how to deal with the customers not assigned to any Mosaic group
+#
+# 0	: ignore 
+# [A-M]	: assume they all belong to group A, B, .., or M
+
+HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP = 0
+
+# how to deal with the customers whose gender is unknown
+#
+# 0	: ignore 
+# 1	: assume they all belong to the most frequently observed gender
+
+HANDLE_CUSTOMERS_WITH_NO_GENDER = 0
+
+
