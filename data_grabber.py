@@ -30,6 +30,7 @@ class DataGrabber(object):
 								"INNER JOIN " + self.trans_info_tbl + " AS s "
 								"ON c.customerid = s.CustomerID")
 		self.mosaic_extra_query = ""
+		self.mosaic_flag = pars["HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP"]
 
 		self.df = pd.DataFrame()
 
@@ -52,7 +53,7 @@ class DataGrabber(object):
 
 			start_time = time.time()
 
-			if pars["HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP"] == "0":
+			if self.mosaic_flag == "0":
 
 				print("ignoring records without Mosaic types...")
 
