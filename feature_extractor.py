@@ -32,7 +32,9 @@ class CustProfileCreator(object):
 		self.df = transaction_df.drop_duplicates(subset=["CustomerID", "transID"], inplace=False)
 		self.noriginal_trans = len(transaction_df.index)
 		self.ucustomer_ids = list(self.df["CustomerID"].unique())  # list of unique customer IDs
-		self.pops = set(self.df["CustPop"]) | set(self.df["SalePop"])  
+		self.pops = set(self.df["CustPop"]) | set(self.df["SalePop"]) 
+		self.pops_enc = dict(zip(self.pops, range(1,len(self.pops) + 1)))
+		self.pops_inverse_enc = {v: k for k, v in self.pops_enc.items()}
 		self.nuc = len(self.ucustomer_ids)
 		self.cust_feature_dict = defaultdict(lambda: defaultdict(int))  # {"customerID1": {"feature1": 1, "feature2": 0, ..}, ..}
 		self.customer_profile = pd.DataFrame()
@@ -56,6 +58,7 @@ class CustProfileCreator(object):
 													if (k.isalnum() and k not in self.mtype_secondary_junk)], key=lambda x: x[1], reverse=True)[:20]
 		self.list_popular_sec_mtypes = [tp for tp, co in self.popular_sec_mtypes]
 		self.mosaic_flag = pars["HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP"]
+		self.gender_flag = pars["HANDLE_CUSTOMERS_WITH_NO_GENDER"]
 		self.savetofile = pars["CUST_PROF_FILE"]
 
 		# intermediate features:
@@ -67,7 +70,7 @@ class CustProfileCreator(object):
 	def describe_input_df(self):
 
 		print("input data frame contains {} transaction records in total; {} unique transactions by {} unique customers".format(self.noriginal_trans, len(self.df.index), self.nuc))
-		print("popular secondary mtypes are {}".format(self.list_popular_sec_mtypes))
+		# print("popular secondary mtypes are {}".format(self.list_popular_sec_mtypes))
 
 
 	def approve_feature(self, col):
@@ -123,6 +126,7 @@ class CustProfileCreator(object):
 				
 				# mosaic letter is a feature:
 				self.cust_feature_dict[customer]["mos_letter_" + mos_letter] = 1
+				self.mosaic_letter_features.add("mos_letter_" + mos_letter)
 		
 				# income level features:		
 				if (mos_letter in ["A","D"] or 					    # all A and D are rich 
@@ -188,11 +192,12 @@ class CustProfileCreator(object):
 			# collect gender feature
 			#
 
-			flag, val = self.approve_feature(df_only_this_customer["Gender"])
-			if flag:
-				gend_feature = "gender=" + val
-				self.cust_feature_dict[customer][gend_feature] = 1
-				self.gender_features.add(gend_feature)
+			if self.gender_flag != "0":
+				flag, val = self.approve_feature(df_only_this_customer["Gender"])
+				if flag:
+					gend_feature = "gender=" + val
+					self.cust_feature_dict[customer][gend_feature] = 1
+					self.gender_features.add(gend_feature)
 
 
 			# 
@@ -208,11 +213,15 @@ class CustProfileCreator(object):
 			# 
 			# collect population features
 			#
-			for j in range(len(self.cust_pop_counts[customer].keys()),1,-1):
-				if j:
-					pop_feature = "in_" + str(j) + "_pops"
-					self.pop_features.add(pop_feature)
-					self.cust_feature_dict[customer][pop_feature] = 1 
+			# for j in range(len(self.cust_pop_counts[customer].keys()),1,-1):
+			# 	if j:
+			# 		pop_feature = "in_" + str(j) + "_pops"
+			# 		self.pop_features.add(pop_feature)
+			# 		self.cust_feature_dict[customer][pop_feature] = 1 
+			
+			if len(self.cust_pop_counts[customer].keys()) == 1:  # if only in one population
+				for k in self.cust_pop_counts[customer].keys():
+					self.cust_feature_dict[customer]["Population"] = self.pops_enc[k]
 			
 	def create_profile(self):
 
@@ -221,21 +230,19 @@ class CustProfileCreator(object):
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
 		self.customer_profile["CustomerID"] = self.customer_profile.index
 
-		print("customer df has the following columns:", list(self.customer_profile))
-		# do we need to get rid of some customers? for example, those who are not assigned to any Mosaic classes
+		# print("customer df has the following columns:", list(self.customer_profile))
+		# do we need to get rid of some customers? 
 
-		# if self.mosaic_flag == "0":
+		idx_customers_remove = [cid for cid in self.cust_pop_counts.keys() if len(self.cust_pop_counts[cid].keys()) > 1]
+		print("turns out that {} cutommers are in multiple populations".format(len(idx_customers_remove)))
 
-		# 	idx_who_remove = self.customer_profile["MosaicType"].isnull()
-		# 	print("apparently, {} unique customers are not assigned to any Mosaic class...".format(len(idx_who_remove)))
-
-		# 	self.customer_profile = self.customer_profile[~idx_who_remove]
+		self.customer_profile = self.customer_profile[~self.customer_profile["CustomerID"].isin(idx_customers_remove)]
 
 		# deal with missing values where possible
 
 		# fill the below features with zeros where the values are missing
 
-		idx_missing_zero = self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features | self.pop_features | self.age_features
+		idx_missing_zero = self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features | self.pop_features | self.age_features | self.mosaic_letter_features | self.mosaic_income_features | self.mosaic_education_features
 
 		self.customer_profile.loc[:,idx_missing_zero] = \
 		self.customer_profile.loc[:,idx_missing_zero].fillna(0)

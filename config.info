@@ -14,14 +14,14 @@ DSN = TEGA_DB
 
 PWD = PA$$word914
 
-# table to connect to (and grab)
+# table to upload the feature importances to
 
-TABLE_NAME = [TEGA].[TT\igork].AO_PopDiff
+TABLE_FEATURE_IMPORTANCES = [TEGA].[TT\igork].AO_Feature_Importances
 
 # how many rows to get
 #
 # *	: all
-# n	: only n; fro example: 50000
+# n	: only n; for example: 50000
 
 GET_NROWS = *
 
@@ -39,22 +39,21 @@ TABLE_FILE = ./data/some_data.pkl
 
 ### missing values parameters
 
-# how to deal with the customers not assigned to any Mosaic group
-#
-# 0	: ignore 
-# [A-M]	: assume they all belong to group A, B, .., or M
-
 ### junk values
 
 MTYPE_PRIMARY_JUNK = --- NA IGNORE
 MTYPE_SECONDARY_JUNK = ---
+
+# how to deal with the customers not assigned to any Mosaic group
+#
+# 0	: ignore 
+# [A-M]	: assume they all belong to group A, B, .., or M
 
 HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP = 0
 
 # how to deal with the customers whose gender is unknown
 #
 # 0	: ignore 
-# 1	: assume they all belong to the most frequently observed gender
 
 HANDLE_CUSTOMERS_WITH_NO_GENDER = 0
 
