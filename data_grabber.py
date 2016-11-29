@@ -57,16 +57,16 @@ class DataGrabber(object):
 
 				print("ignoring records without Mosaic types...")
 
-				self.mosaic_extra_query = " where [MosaicType] IS NOT NULL"
+				self.mosaic_extra_query = " where k.[MosaicType] IS NOT NULL"
 
 
 			if self.get_howmany_rows != "*":
 
-				sql_line = "select top " + str(self.get_howmany_rows) + "*" + " from " + "(" + self.join_tabs_query + ")" + self.mosaic_extra_query + ";"
+				sql_line = "select top " + str(self.get_howmany_rows) + "*" + " from " + "(" + self.join_tabs_query + ") as k" + self.mosaic_extra_query + ";"
 
 			else:
 
-				sql_line = "select " + str(self.get_howmany_rows) + " from " + "(" + self.join_tabs_query + ")"  + self.mosaic_extra_query + ";"
+				sql_line = "select " + str(self.get_howmany_rows) + " from " + "(" + self.join_tabs_query + ") as k"  + self.mosaic_extra_query + ";"
 
 			self.df = pd.read_sql(sql_line, conn)
 			self.df.to_pickle(self.pkl_data)
