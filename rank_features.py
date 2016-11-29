@@ -69,13 +69,32 @@ if __name__ == "__main__":
 	fimps = sorted( zip(list(X_test), best_forest.feature_importances_), key=lambda x: x[1], reverse=True)[:20]
 
 	upload_df = pd.DataFrame({"feature":[k for k, v in fimps], "importance":[ "%.2f" % v for k,v in fimps]})
+	upload_df["importance"] = upload_df["importance"].astype(float)
 
 	print(upload_df)
+	upload_df.to_csv("./data/importances_df.csv", sep="\t", index=False)
 
 	# connect using the same details as before
 	conn = pyodbc.connect(dg.auth)
+	cursor = conn.cursor()
 
-	upload_df.to_sql(config_parameters["TABLE_FEATURE_IMPORTANCES"], conn, index=False)
+	fimps_new_table_query = ("CREATE TABLE " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
+								" (feature varchar(255), importance real);")
+	cursor.execute(fimps_new_table_query)
+	conn.commit()
+
+	bulk_insert_query = sql = ("BULK INSERT " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
+								" FROM ./data/importances_df.csv WITH (FIELDTERMINATOR='\\t',ROWTERMINATOR='\\n';")
+	cursor.execute(bulk_insert_query)
+	conn.commit()
+
+	cursor.close()
+	conn.close()
+	
+
+
+
+
 
 
 
