@@ -53,10 +53,10 @@ if __name__ == "__main__":
 
 	print("created the training anf testing sets; the training set contains {} customers and the testing set {} customers...".format(len(X_train.index), len(X_test.index)))
 	print("in the training set, we have the following representation for each population:")
-	# print({fe.pops_inverse_enc[k]: v for k, v in Counter(y_train).items()})
+	print({fe.pops_inverse_enc[k]: v for k, v in Counter(y_train).items()})
 	# print("y_train:",y_train)
 
-	rf_parameters = {'n_estimators': np.arange(1,6,1).tolist(),'min_weight_fraction_leaf':np.arange(0.01,0.2,0.01).tolist()}
+	rf_parameters = {'n_estimators': np.arange(1,12,1).tolist(),'min_weight_fraction_leaf':np.arange(0.01,0.5,0.01).tolist()}
 
 	forest = RandomForestClassifier()
 	rf_grid = GridSearchCV(forest, rf_parameters)
@@ -68,10 +68,11 @@ if __name__ == "__main__":
 
 	fimps = sorted( zip(list(X_test), best_forest.feature_importances_), key=lambda x: x[1], reverse=True)[:20]
 
-	upload_df = pd.DataFrame({"feature":[k for k, v in fimps], "importance":[ "%.2f" % v for k,v in fimps]})
+	upload_df = pd.DataFrame({"feature":[k for k, v in fimps], "importance":[ "%.3f" % v for k,v in fimps]})
 	upload_df["importance"] = upload_df["importance"].astype(float)
 
 	print(upload_df)
+
 	upload_df.to_csv("./data/importances_df.csv", sep="\t", index=False)
 
 	# connect using the same details as before
@@ -90,7 +91,7 @@ if __name__ == "__main__":
 
 	cursor.close()
 	conn.close()
-	
+
 
 
 
