@@ -25,6 +25,14 @@ TABLE_NAME = [TEGA].[TT\igork].AO_PopDiff
 
 GET_NROWS = *
 
+# customer information table to use
+
+CUST_DATA_TABLE = [TEGA].[TT\mehrdadn].[AO_CustData]
+
+# transaction information table to join with the customer info table
+
+TRANS_INFO_TABLE = [TEGA].[TT\mehrdadn].[AO_SalesFacts]
+
 #  file to save pulled table
 
 TABLE_FILE = ./data/some_data.pkl
