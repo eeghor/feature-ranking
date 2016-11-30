@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
 	with open("config.info", "r") as f:
 		for line in f:
-			if "=" in line:
+			if ("=" in line) and ("#" not in line):
 				tokens = [w.strip() for w in line.split("=")]
 				config_parameters[tokens[0]] = tokens[1]
 
@@ -76,21 +76,38 @@ if __name__ == "__main__":
 	upload_df.to_csv("./data/importances_df.csv", sep="\t", index=False)
 
 	# connect using the same details as before
-	conn = pyodbc.connect(dg.auth)
-	cursor = conn.cursor()
+	#conn = pyodbc.connect(dg.auth)
+	#cursor = conn.cursor()
+
+	# first check if the table already exists
+	
+	"""
+	fimps_ifexists_drop_quesry = ("IF OBJECT_ID(N'" + config_parameters["TABLE_FEATURE_IMPORTANCES"] + "', N'U') IS NOT NULL BEGIN DROP TABLE " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + " END;")
+	cursor.execute(fimps_ifexists_drop_quesry)
 
 	fimps_new_table_query = ("CREATE TABLE " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
 								" (feature varchar(255), importance real);")
+	
 	cursor.execute(fimps_new_table_query)
-	conn.commit()
+	"""
 
-	bulk_insert_query = sql = ("BULK INSERT " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
-								" FROM ./data/importances_df.csv WITH (FIELDTERMINATOR='\\t',ROWTERMINATOR='\\n';")
-	cursor.execute(bulk_insert_query)
-	conn.commit()
+	for row in upload_df.itertuples():
 
-	cursor.close()
-	conn.close()
+		row_feature = row[1]
+		row_importance = row[2]
+
+		cursor.execute("INSERT INTO " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
+											" values (" + row_feature + "," + row_importance + ");")
+
+	#conn.commit()
+
+	# bulk_insert_query = ("BULK INSERT " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
+	# 							" FROM './data/importances_df.csv' WITH (FIELDTERMINATOR='\\t',ROWTERMINATOR='\\n');")
+	# cursor.execute(bulk_insert_query)
+	# conn.commit()
+
+	# cursor.close()
+	# conn.close()
 
 
 
