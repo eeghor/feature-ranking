@@ -99,6 +99,45 @@ if __name__ == "__main__":
 
 	# cursor.close()
 	# conn.close()
+	# first check if the table already exists
+	
+	
+	fimps_ifexists_drop_quesry = ("IF OBJECT_ID(N'" + config_parameters["TABLE_FEATURE_IMPORTANCES"] + "', N'U') IS NOT NULL BEGIN DROP TABLE " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + " END;")
+	cursor.execute(fimps_ifexists_drop_quesry)
+
+	fimps_new_table_query = ("CREATE TABLE " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
+								" (feature varchar(255), importance real);")
+	
+	cursor.execute(fimps_new_table_query)
+	print("created a new table called", config_parameters["TABLE_FEATURE_IMPORTANCES"])
+	
+	time_now = time.time()
+	print("uploading feature importances to the table...")
+
+	for row in upload_df.itertuples():
+
+		row_feature = row[1]
+		row_importance = row[2]
+
+		add_values_query = ("INSERT INTO " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + " (feature, importance)" + 
+											" values (" + "'" + row_feature + "'"  + "," + str(row_importance) + ");")
+		cursor.execute(add_values_query)
+
+	conn.commit()
+
+	time_after = time.time()
+
+	print("done. elapsed time {} sec".format(round((time_after-time_now),1)))
+	# bulk_insert_query = ("BULK INSERT " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
+	# 							" FROM './data/importances_df.csv' WITH (FIELDTERMINATOR='\\t',ROWTERMINATOR='\\n');")
+	# cursor.execute(bulk_insert_query)
+	# conn.commit()
+
+	cursor.close()
+	conn.close()
+
+
+
 
 
 
