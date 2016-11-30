@@ -51,8 +51,8 @@ if __name__ == "__main__":
 														 fe.customer_profile.loc[:,"Population"],
 								 test_size=0.2, stratify=fe.customer_profile.Population, random_state=113)
 
-	print("created the training anf testing sets; the training set contains {} customers and the testing set {} customers...".format(len(X_train.index), len(X_test.index)))
-	print("in the training set, we have the following representation for each population:")
+	print("created the training and testing sets; the training set contains {} customers and the testing set {} customers...".format(len(X_train.index), len(X_test.index)))
+	print("in the training set, each population represented as below:")
 	print({fe.pops_inverse_enc[k]: v for k, v in Counter(y_train).items()})
 	# print("y_train:",y_train)
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
 	forest = RandomForestClassifier()
 	rf_grid = GridSearchCV(forest, rf_parameters)
 	rf_grid.fit(X_train, y_train)
-	print("best parameter values:", rf_grid.best_params_)
+	# print("best parameter values:", rf_grid.best_params_)
 	best_forest = rf_grid.best_estimator_
 	# best_rf.fit(X_train, y_train)
 	print("accuracy score is {}".format(round(accuracy_score(y_test, rf_grid.predict(X_test)), 2)))
@@ -71,14 +71,13 @@ if __name__ == "__main__":
 	upload_df = pd.DataFrame({"feature":[k for k, v in fimps], "importance":[ "%.3f" % v for k,v in fimps]})
 	upload_df["importance"] = upload_df["importance"].astype(float)
 
-	print(upload_df)
+	# print(upload_df)
 
 	upload_df.to_csv("./data/importances_df.csv", sep="\t", index=False)
 
 	# connect using the same details as before
-	#conn = pyodbc.connect(dg.auth)
-	#cursor = conn.cursor()
-
+	conn = pyodbc.connect(dg.auth)
+	cursor = conn.cursor()
 	# first check if the table already exists
 	
 	"""
@@ -91,15 +90,7 @@ if __name__ == "__main__":
 	cursor.execute(fimps_new_table_query)
 	"""
 
-	for row in upload_df.itertuples():
-
-		row_feature = row[1]
-		row_importance = row[2]
-
-		cursor.execute("INSERT INTO " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
-											" values (" + row_feature + "," + row_importance + ");")
-
-	#conn.commit()
+	
 
 	# bulk_insert_query = ("BULK INSERT " + config_parameters["TABLE_FEATURE_IMPORTANCES"] + 
 	# 							" FROM './data/importances_df.csv' WITH (FIELDTERMINATOR='\\t',ROWTERMINATOR='\\n');")
