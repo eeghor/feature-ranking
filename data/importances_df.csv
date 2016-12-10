@@ -1,0 +1,21 @@
+feature	importance
+AFL	0.234
+CONTMU	0.149
+CRICKET	0.117
+SPECIAL	0.103
+OTHER	0.096
+SOCCER	0.08
+cust_state=VIC	0.078
+good_education	0.056
+average_education	0.027
+low_income	0.026
+mos_letter_C	0.011
+age_group=18 - 24	0.006
+age_group=25 - 34	0.005
+mos_letter_B	0.004
+age_group=45 - 54	0.004
+average_income	0.002
+high_income	0.001
+cust_state=NSW	0.0
+mos_letter_A	0.0
+SPORT	0.0
