@@ -65,6 +65,25 @@ class DataHandler(object):
 
 		return (df, tm)
 
+	def _sql_to_df_2(self, sql_string):
+
+		from sqlalchemy import create_engine, Table, select, MetaData, exc
+		MSSQLUser = "igork"
+		MSSQLPword = "PA$$word914"
+		MSSQLHost = 'SQLTKT02A'
+		DatabasePort = 1433
+		DatabaseName = 'TEGA'
+
+		#connStr = 'mssql+pymssql://{0}:{1}@{2}:{3}/{4}?{5}'.format(MSSQLUser, MSSQLPword, MSSQLHost, DatabasePort, DatabaseName, "driver=SQL+Server+Native+Client+11.0")
+		connStr = "mssql+pymssql://igork:PA$$word914@TEGA_DB"
+		print("will be using the string",connStr)
+		engine = create_engine(connStr)
+		connection = engine.connect()
+		#metadata = MetaData()
+		#df = pd.read_sql(sql_string, connection)
+
+
+
 	#
 	# finalise the query to be sent to join the customer and transaction info tables
 	#	

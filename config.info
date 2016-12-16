@@ -23,7 +23,7 @@ TABLE_FEATURE_IMPORTANCES = [TEGA].[TT\igork].AO_Feature_Importances
 # *	: all
 # n	: only n; for example: 50000
 
-GET_NROWS = *
+GET_NROWS = 4000000
 
 # customer information table to use
 
@@ -36,6 +36,7 @@ TRANS_INFO_TABLE = [TEGA].[TT\mehrdadn].[AO_SalesFacts]
 #  file to save pulled table
 
 TABLE_FILE = ./data/some_data.pkl
+ENFORCE_DOWNLOAD = yes
 
 ### missing values parameters
 
@@ -56,6 +57,10 @@ HANDLE_CUSTOMERS_WITH_NO_MOSAIC_GROUP = 0
 # 0	: ignore 
 
 HANDLE_CUSTOMERS_WITH_NO_GENDER = 0
+
+# how many most popular secondary MTypes should be made features
+
+NTOP_SEC_MTYPES_INTO_FEATURES = 15 
 
 ### where to save customer profile data frame
 

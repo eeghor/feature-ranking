@@ -289,6 +289,14 @@ class CustProfileCreator(object):
 				self.cust_feature_dict[customer][cstate_feature] = 1
 				self.customer_state_features.add(cstate_feature)
 
+			#
+			# temporal sales features: we look into the purchases during last 12 months from NOW if available
+			#
+
+			
+
+
+
 			# 
 			# collect population features
 			#
