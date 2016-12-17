@@ -7,6 +7,7 @@ import pandas as pd
 import pickle
 import time
 import os.path
+from collections import defaultdict
 
 class DataHandler(object):
 
@@ -15,7 +16,7 @@ class DataHandler(object):
 		self._cust_tbl = pars["CUST_DATA_TABLE"]
 		self._tran_tbl = pars["TRANS_INFO_TABLE"]
 		self._nrow_get = pars["GET_NROWS"]
-		self._nrow = 0
+		self._nrow = 0  # how many rows o get
 		self._tran_pkl = pars["TABLE_FILE"]  # to pickle downloaded table
 		self._auth = "DSN=" + pars["DSN"] +";" + "PWD=" + pars["PWD"]
 		self.join_tabs_query = ("SELECT c.[CustomerID],"
@@ -36,6 +37,12 @@ class DataHandler(object):
 		self._enf_down = pars["ENFORCE_DOWNLOAD"].lower().strip()
 		self.dwnl_tbl = pd.DataFrame()
 		self._dwl_time = 0
+		self._vexpl = defaultdict(str)
+
+		with open("var_explanation.txt", "r") as f:
+			for line in f:
+				var, expl = [v.strip() for v in [line[:line.index(":")], line[line.index(":")+1:]]]
+				self._vexpl[var] = expl
 
 	#
 	# get a table using the supplied SQL string then put it in a data frame and save this data frame 
@@ -54,34 +61,17 @@ class DataHandler(object):
 		
 		print("reading SQL table into data frame...", end="")
 		df = pd.read_sql(sql_string, conn)
-		print("done")
-		print("downloaded {} rows".format(len(df.index)))
-
+		print("ok")
+		print("downloaded rows...", end="")
+		print(len(df.index))
+		print("pickling...", end="")
 		df.to_pickle(self._tran_pkl)
-		
+		print("ok")
 		end_time = time.time()
 		
 		tm = round((end_time-start_time)/60,1)  # elapsed time in minutes
 
 		return (df, tm)
-
-	def _sql_to_df_2(self, sql_string):
-
-		from sqlalchemy import create_engine, Table, select, MetaData, exc
-		MSSQLUser = "igork"
-		MSSQLPword = "PA$$word914"
-		MSSQLHost = 'SQLTKT02A'
-		DatabasePort = 1433
-		DatabaseName = 'TEGA'
-
-		#connStr = 'mssql+pymssql://{0}:{1}@{2}:{3}/{4}?{5}'.format(MSSQLUser, MSSQLPword, MSSQLHost, DatabasePort, DatabaseName, "driver=SQL+Server+Native+Client+11.0")
-		connStr = "mssql+pymssql://igork:PA$$word914@TEGA_DB"
-		print("will be using the string",connStr)
-		engine = create_engine(connStr)
-		connection = engine.connect()
-		#metadata = MetaData()
-		#df = pd.read_sql(sql_string, connection)
-
 
 
 	#
@@ -92,17 +82,17 @@ class DataHandler(object):
 
 		_mosa_add_qry = ""
 
-		if self._mosa_flg == "0":
+		if self._mosa_flg == "0":  # if ignore people with no known Mosaic group
 			_mosa_add_qry = " where k.[MosaicType] IS NOT NULL"
 
 		# if no need to get all rows
 		if self._nrow_get != "*":
 
-			sql_line = ("select top " + str(self._nrow_get) + "* from (" + self.join_tabs_query + 
-															") as k" + self._mosa_add_qry + ";")
+			extra_bit = " top " + str(self._nrow_get) + " * "
 		else:
+			extra_bit = " * "
 			
-			sql_line = ("select " + str(self._nrow_get) + " from (" + self.join_tabs_query + 
+		sql_line = ("select " + extra_bit + " from (" + self.join_tabs_query + 
 														") as k" + self._mosa_add_qry + ";")
  
 		return sql_line
@@ -144,10 +134,20 @@ class DataHandler(object):
 	def show_table(self, n=10):
 
 		print(self.dwnl_tbl.head(n))
-		print("downloaded table contains {} rows and {} columns".format(self._nrow, self.dwnl_tbl.shape[1]))
-		print("unique customers: {}".format(len(list(self.dwnl_tbl["CustomerID"].unique()))))
-		print("unique transactions: {}".format(len(list(self.dwnl_tbl["transID"].unique()))))
-		print("time taken to download: {} minutes".format(self._dwl_time))
+		print("---> summary on downloaded table")
+		print("rows...{}".format(self._nrow))
+		print("columns...{}".format(self.dwnl_tbl.shape[1]))
+		print("unique customers...{}".format(len(list(self.dwnl_tbl["CustomerID"].unique()))))
+		print("unique transactions...{}".format(len(list(self.dwnl_tbl["transID"].unique()))))
+
+		for v in list(self.dwnl_tbl):
+			try:
+				print("{}\t: {}".format(v, self._vexpl[v]))
+			except:
+
+				print("{}\t: {}".format(v, "not sure what it is.."))
+				pass
+
 					
 					
 		

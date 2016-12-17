@@ -4,11 +4,6 @@ data frame;
 
 INPUT:  the input data frame has the following columns:
 
-'CustomerID', 'Gender', 'ageGroup', 'MosaicType', 'CustomerState', 'CustPop', 'SalePop', 
-'transID', 'DaysAhead', 'ValueAdmitQty', 'AdmitQty', 'Sales', 'VenueState', 'pk_event_dim', 
-'CancelledFlag', 'BChannel', 'MTypePrimary', 'MTypeSecondary', 'CardType', 'EventNameStandard', 
-'PrimaryShow', 'PrimaryShowDesc', 'pk_attribute_dim'
-
 OUTPUT: a data frame containing features for the customers, that is, it has the form
 
 'CustomerID', 'Feature 1', 'Feature 2', .... 

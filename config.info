@@ -35,8 +35,8 @@ TRANS_INFO_TABLE = [TEGA].[TT\mehrdadn].[AO_SalesFacts]
 
 #  file to save pulled table
 
-TABLE_FILE = ./data/some_data.pkl
-ENFORCE_DOWNLOAD = yes
+TABLE_FILE = ./data/small.pkl
+ENFORCE_DOWNLOAD = no
 
 ### missing values parameters
 
