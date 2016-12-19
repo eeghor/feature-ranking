@@ -51,6 +51,7 @@ if __name__ == "__main__":
 	fe.show_cust_state_representation()
 	fe.show_cust_age_representation()
 	fe.create_customer_features()
+	print("creating customer profile...")
 	fe.create_profile()
 	
 	print("customers included in the profile belong to the following {} classes:{}".format(len(fe.pops), fe.pops))
@@ -74,13 +75,14 @@ if __name__ == "__main__":
 
 	rf_parameters = {'n_estimators': np.arange(1,12,1).tolist(),'min_weight_fraction_leaf':np.arange(0.01,0.5,0.01).tolist()}
 
-	# forest = RandomForestClassifier()
-	# rf_grid = GridSearchCV(forest, rf_parameters)
-	# rf_grid.fit(X_train, y_train)
-	# # print("best parameter values:", rf_grid.best_params_)
-	# best_forest = rf_grid.best_estimator_
-	# # best_rf.fit(X_train, y_train)
-	# print("accuracy score is {}".format(round(accuracy_score(y_test, rf_grid.predict(X_test)), 2)))
+	forest = RandomForestClassifier()
+	rf_grid = GridSearchCV(forest, rf_parameters)
+	print("training random forests...")
+	rf_grid.fit(X_train, y_train)
+	# print("best parameter values:", rf_grid.best_params_)
+	best_forest = rf_grid.best_estimator_
+	# best_rf.fit(X_train, y_train)
+	print("accuracy score is {}".format(round(accuracy_score(y_test, rf_grid.predict(X_test)), 2)))
 
 	# fimps = sorted( zip(list(X_test), best_forest.feature_importances_), key=lambda x: x[1], reverse=True)[:20]
 

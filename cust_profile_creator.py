@@ -51,6 +51,7 @@ class CustProfileCreator(object):
 		self.customer_state_features = set()
 		self.mtype_primary_features = set()
 		self.mtype_secondary_features = set()
+		self.over_time_features = set()
 		self.pop_features = set()
 
 		# junk values
@@ -294,18 +295,23 @@ class CustProfileCreator(object):
 			now = date.today()   # datetime.date(2016, 12, 19)
 			# timedelta object represents a duration, the difference between two dates or times
 			one_year = timedelta(days=365)
+			half_year = timedelta(weeks=26)
 
 			one_year_ago = now - one_year
+			half_year_ago = now - half_year
 			# 2016-09-25 14:04:47.000
-			df_only_this_customer["transactionDate"] = df_only_this_customer["transactionDate"].dt.date    #  e.g. 2012-05-17
+			df_only_this_customer.loc[:,"transactionDate"] = df_only_this_customer.loc[:,"transactionDate"].dt.date    #  e.g. 2012-05-17
 			# index where the customer purchased 
 			if min(df_only_this_customer["transactionDate"]) < one_year_ago:
 				last_year_idx = (df_only_this_customer["transactionDate"] >= one_year_ago)
-				print("last year transactions:",df_only_this_customer[last_year_idx])
+				# print("last year transactions:",df_only_this_customer[last_year_idx])
 				self.cust_feature_dict[customer]["total_trans_12m"] = len(df_only_this_customer[last_year_idx])
-
-				print("created 12 m feature for customer as below:")
-				print(df_only_this_customer)
+				self.over_time_features.add("total_trans_12m")
+			if min(df_only_this_customer["transactionDate"]) < half_year_ago:
+				half_year_idx = (df_only_this_customer["transactionDate"] >= half_year_ago)
+				# print("last year transactions:",df_only_this_customer[last_year_idx])
+				self.cust_feature_dict[customer]["total_trans_6m"] = len(df_only_this_customer[half_year_idx])
+				self.over_time_features.add("total_trans_6m")
 
 
 
@@ -329,19 +335,13 @@ class CustProfileCreator(object):
 		self.customer_profile = pd.DataFrame.from_dict(self.cust_feature_dict, orient="index")
 		self.customer_profile["CustomerID"] = self.customer_profile.index
 
-		# print("customer df has the following columns:", list(self.customer_profile))
-		# do we need to get rid of some customers? 
-
-		# idx_customers_remove = [cid for cid in self.cust_pop_counts.keys() if len(self.cust_pop_counts[cid].keys()) > 1]
-		# print("turns out that {} cutomers are in multiple populations!".format(len(idx_customers_remove)))
-
-		# self.customer_profile = self.customer_profile[~self.customer_profile["CustomerID"].isin(idx_customers_remove)]
-
+		
 		# deal with missing values where possible
 
 		# fill the below features with zeros where the values are missing
 
-		idx_missing_zero = self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features | self.pop_features | self.age_features | self.mosaic_letter_features | self.mosaic_income_features | self.mosaic_education_features
+		print("setting missing values to zero...")
+		idx_missing_zero = self.mtype_primary_features | self.mtype_secondary_features | self.customer_state_features | self.pop_features | self.age_features | self.mosaic_letter_features | self.mosaic_income_features | self.mosaic_education_features | self.over_time_features
 
 		self.customer_profile.loc[:,idx_missing_zero] = \
 		self.customer_profile.loc[:,idx_missing_zero].fillna(0)
