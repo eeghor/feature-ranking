@@ -297,10 +297,11 @@ class CustProfileCreator(object):
 
 			one_year_ago = now - one_year
 			# 2016-09-25 14:04:47.000
-			df_only_this_customer["transactionDate"] = df_only_this_customer["transactionDate"].apply(lambda _: datetime.strptime(_.dt, "%Y-%m-%d %H:%M:%S"))
+			df_only_this_customer["transactionDate"] = df_only_this_customer["transactionDate"].dt.date    #  e.g. 2012-05-17
 			# index where the customer purchased 
 			if min(df_only_this_customer["transactionDate"]) < one_year_ago:
 				last_year_idx = (df_only_this_customer["transactionDate"] >= one_year_ago)
+				print("last year transactions:",df_only_this_customer[last_year_idx])
 				self.cust_feature_dict[customer]["total_trans_12m"] = len(df_only_this_customer[last_year_idx])
 
 				print("created 12 m feature for customer as below:")
