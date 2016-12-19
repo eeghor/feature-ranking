@@ -17,6 +17,9 @@ import pickle
 from collections import defaultdict, Counter
 import re
 
+from datetime import datetime, timedelta
+from datetime import date
+
 class CustProfileCreator(object):
 
 	def __init__(self, transaction_df, pars):
@@ -287,8 +290,21 @@ class CustProfileCreator(object):
 			#
 			# temporal sales features: we look into the purchases during last 12 months from NOW if available
 			#
+ 
+			now = date.today()   # datetime.date(2016, 12, 19)
+			# timedelta object represents a duration, the difference between two dates or times
+			one_year = timedelta(days=365)
 
-			
+			one_year_ago = now - one_year
+			# 2016-09-25 14:04:47.000
+			df_only_this_customer["transactionDate"] = df_only_this_customer["transactionDate"].apply(lambda _: datetime.strptime(_.dt, "%Y-%m-%d %H:%M:%S"))
+			# index where the customer purchased 
+			if min(df_only_this_customer["transactionDate"]) < one_year_ago:
+				last_year_idx = (df_only_this_customer["transactionDate"] >= one_year_ago)
+				self.cust_feature_dict[customer]["total_trans_12m"] = len(df_only_this_customer[last_year_idx])
+
+				print("created 12 m feature for customer as below:")
+				print(df_only_this_customer)
 
 
 
